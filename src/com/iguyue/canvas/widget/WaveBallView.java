@@ -1,6 +1,10 @@
 package com.iguyue.canvas.widget;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import com.iguyue.canvas.R;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -11,7 +15,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Bitmap.Config;
 import android.graphics.Paint.Style;
 import android.graphics.PorterDuff;
-import android.graphics.Xfermode;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -19,20 +23,25 @@ public class WaveBallView extends View
 {
 	private final float DEFUALT_RADIUS = 100.0f;
 	private final int DEFAULT_COLOR = 0xAA000000;
-	private final int DEFUALT_BACKGROUND_COLOR = 0x995CB85C;
+	private final int DEFUALT_BACKGROUND_COLOR = 0xEE5CB85C;
+	private final int DEFUALT_RING_COLOR = 0xFF5CB85C;
+	private final float DEFUALT_PERCENT = 1.0f;
+	private final int WAVE_HEIGHT = 20;
 	
 	private float radius;
 	private int color;
 	private int backgroundColor;
+	private int initPos;
 	
 	private Paint mWavePaint;
+	private Paint mContentPaint;
+	private Paint mRingPaint;
+	
+	private float percent;
 	
 	public WaveBallView(Context context) 
 	{
 		super(context);
-		radius = DEFUALT_RADIUS;
-		color = DEFAULT_COLOR;
-		backgroundColor = DEFUALT_BACKGROUND_COLOR;
 		initData();
 	}
 
@@ -45,6 +54,7 @@ public class WaveBallView extends View
 		color = typedArray.getColor( R.styleable.WaveBallView_color, DEFAULT_COLOR );
 		backgroundColor = typedArray.getColor( 
 				R.styleable.WaveBallView_background_color, DEFUALT_BACKGROUND_COLOR );
+		percent = typedArray.getFloat( R.styleable.WaveBallView_percent, DEFUALT_PERCENT );
 		initData();
 	}
 	
@@ -57,7 +67,53 @@ public class WaveBallView extends View
 		mWavePaint.setAntiAlias( true );
 		mWavePaint.setColor( backgroundColor );
 		mWavePaint.setStyle( Style.FILL );
-
+		
+		mRingPaint = new Paint();
+		mRingPaint.setAntiAlias( true );
+		mRingPaint.setColor( DEFUALT_RING_COLOR );
+		mRingPaint.setStyle( Style.STROKE );
+		mRingPaint.setStrokeWidth( 20 );
+		
+		mContentPaint = new Paint();
+		mContentPaint.setAntiAlias( true );
+		mContentPaint.setColor( 0xFFFFFFFF );
+		mContentPaint.setTextSize( radius / 4 );
+		mContentPaint.setStyle( Style.FILL );
+		
+		initPos = 0;
+		
+//		new Thread()
+//		{
+//			public void run() 
+//			{
+//				while( true )
+//				{
+//					initPos += 1;
+//					try 
+//					{
+//						Thread.sleep( 5 );
+//					} 
+//					catch (InterruptedException e) 
+//					{
+//						e.printStackTrace();
+//					}
+//					postInvalidate();
+//				}
+//			};
+//		}.start();
+		
+		Timer senderTimer = new Timer();  
+        senderTimer.schedule(
+        		new TimerTask() 
+        {  
+            @Override  
+            public void run() 
+            {  
+            	initPos += 1;  
+            	postInvalidate();
+            }  
+        }, 5, 5 );
+		
 	}
 	
 	/**
@@ -79,7 +135,7 @@ public class WaveBallView extends View
 		}
 		else
 		{
-			width = Math.round( radius * 2 ) + getPaddingLeft() + getPaddingRight();
+			width = Math.round( ( radius + 20 ) * 2 ) + getPaddingLeft() + getPaddingRight();
 			if ( modeWidth == MeasureSpec.AT_MOST )
 			{
 				width = Math.min( width, specWidthSize );
@@ -92,14 +148,14 @@ public class WaveBallView extends View
 		}
 		else
 		{
-			height = Math.round( radius * 2 ) + getPaddingBottom() + getPaddingTop();
+			height = Math.round( ( radius + 20 ) * 2 ) + getPaddingBottom() + getPaddingTop();
 			if ( modeHeight == MeasureSpec.AT_MOST )
 			{
 				height = Math.min( height, specHeightSize );
 			}
 		}
 		int minSize = Math.min( width , height );
-		radius = minSize / 2;
+		radius = minSize / 2 - 20;
 		
 		setMeasuredDimension( width, height );
 	}
@@ -123,15 +179,38 @@ public class WaveBallView extends View
 		
 		mWavePaint.setColor( color );
 		mWavePaint.setXfermode( new PorterDuffXfermode(PorterDuff.Mode.DST_IN) );
-		for ( int i=0;i<width;i++ )
+		if ( initPos > width * 2 )
 		{
-			tempCanvas.drawLine( i, height, i, height / 2 + (int)( Math.sin( Math.PI * (double)i * 3 / width ) * 10 ) , mWavePaint );
+			initPos = 1;
+		}
+		
+		for ( int i=1;i<=width;i++ )
+		{
+			int m = i + initPos;
+			tempCanvas.drawLine( i, height, i, (int)( height * ( 1.0f - percent ) + WAVE_HEIGHT ) + Math.round( Math.sin( Math.PI * (double)m / width ) * WAVE_HEIGHT ) , mWavePaint );
 		}
 		mWavePaint.setXfermode( null );
 		mWavePaint.setColor( backgroundColor );
 		
 		canvas.drawBitmap( mBitmap, 0, 0, null );
+		
+		canvas.drawCircle( centerX, centerY, radius, mRingPaint );
+		
+		String content = ( percent * 100 ) + "%";
+		Rect rect = new Rect();
+		mContentPaint.getTextBounds( content, 0, content.length(), rect );
+		canvas.drawText( content, centerX - rect.width() / 2, centerY + rect.height() / 2, mContentPaint );
+	}
+
+	public float getPercent() 
+	{
+		return percent;
+	}
+
+	public void setPercent(float percent) 
+	{
+		this.percent = percent;
 	}
 	
-
+	
 }
