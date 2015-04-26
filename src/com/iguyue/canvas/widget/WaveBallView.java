@@ -19,6 +19,11 @@ import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 
+/**
+ * 波浪球View
+ * @author moon
+ *
+ */
 public class WaveBallView extends View 
 {
 	private final float DEFUALT_RADIUS = 100.0f;
