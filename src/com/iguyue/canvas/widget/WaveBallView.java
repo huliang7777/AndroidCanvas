@@ -11,6 +11,7 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Bitmap.Config;
 import android.graphics.Paint.Style;
@@ -188,12 +189,25 @@ public class WaveBallView extends View
 		{
 			initPos = 1;
 		}
-		
+	
+		// 通过闭合path绘制 : PI为180°
+		Path path = new Path();
+		path.lineTo( 0 , height );
 		for ( int i=1;i<=width;i++ )
 		{
 			int m = i + initPos;
-			tempCanvas.drawLine( i, height, i, (int)( height * ( 1.0f - percent ) + WAVE_HEIGHT ) + Math.round( Math.sin( Math.PI * (double)m / width ) * WAVE_HEIGHT ) , mWavePaint );
+			path.lineTo( i , (int)( height * ( 1- percent ) + WAVE_HEIGHT ) + Math.round( Math.sin( Math.PI * (double)m / width ) * WAVE_HEIGHT ) );
 		}
+		path.lineTo( width , height );
+		path.lineTo( 0 , height );
+		tempCanvas.drawPath( path, mWavePaint );
+		
+		// 通过N条Line的sina高度进行绘制
+//		for ( int i=1;i<=width;i++ )
+//		{
+//			int m = i + initPos;
+//			tempCanvas.drawLine( i, height, i, (int)( height * ( 1.0f - percent ) + WAVE_HEIGHT ) + Math.round( Math.sin( Math.PI * (double)m / width ) * WAVE_HEIGHT ) , mWavePaint );
+//		}
 		mWavePaint.setXfermode( null );
 		mWavePaint.setColor( backgroundColor );
 		
