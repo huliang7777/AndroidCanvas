@@ -27,11 +27,11 @@ import android.view.View;
 public class WaveBallView extends View 
 {
 	private final float DEFUALT_RADIUS = 100.0f;
-	private final int DEFAULT_COLOR = 0xAA000000;
-	private final int DEFUALT_BACKGROUND_COLOR = 0xEE5CB85C;
-	private final int DEFUALT_RING_COLOR = 0xFF5CB85C;
+	private final int DEFAULT_COLOR = 0xBB000000;
+	private final int DEFUALT_BACKGROUND_COLOR = 0xFF309B55;
 	private final float DEFUALT_PERCENT = 1.0f;
 	private final int WAVE_HEIGHT = 20;
+	private final int STROKE_WIDTH = 30;
 	
 	private float radius;
 	private int color;
@@ -75,9 +75,9 @@ public class WaveBallView extends View
 		
 		mRingPaint = new Paint();
 		mRingPaint.setAntiAlias( true );
-		mRingPaint.setColor( DEFUALT_RING_COLOR );
+		mRingPaint.setColor( backgroundColor );
 		mRingPaint.setStyle( Style.STROKE );
-		mRingPaint.setStrokeWidth( 20 );
+		mRingPaint.setStrokeWidth( STROKE_WIDTH );
 		
 		mContentPaint = new Paint();
 		mContentPaint.setAntiAlias( true );
@@ -117,7 +117,7 @@ public class WaveBallView extends View
             	initPos += 1;  
             	postInvalidate();
             }  
-        }, 5, 5 );
+        }, 5, 2 );
 		
 	}
 	
@@ -140,7 +140,7 @@ public class WaveBallView extends View
 		}
 		else
 		{
-			width = Math.round( ( radius + 20 ) * 2 ) + getPaddingLeft() + getPaddingRight();
+			width = Math.round( ( radius + STROKE_WIDTH ) * 2 ) + getPaddingLeft() + getPaddingRight();
 			if ( modeWidth == MeasureSpec.AT_MOST )
 			{
 				width = Math.min( width, specWidthSize );
@@ -153,14 +153,14 @@ public class WaveBallView extends View
 		}
 		else
 		{
-			height = Math.round( ( radius + 20 ) * 2 ) + getPaddingBottom() + getPaddingTop();
+			height = Math.round( ( radius + STROKE_WIDTH ) * 2 ) + getPaddingBottom() + getPaddingTop();
 			if ( modeHeight == MeasureSpec.AT_MOST )
 			{
 				height = Math.min( height, specHeightSize );
 			}
 		}
 		int minSize = Math.min( width , height );
-		radius = minSize / 2 - 20;
+		radius = minSize / 2 - STROKE_WIDTH;
 		
 		setMeasuredDimension( width, height );
 	}

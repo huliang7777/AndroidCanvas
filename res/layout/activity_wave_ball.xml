@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        moon:percent="0.8"
+        moon:percent="0.7"
         moon:radius="100dp"/>
 
 </RelativeLayout>
