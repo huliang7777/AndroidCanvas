@@ -1,0 +1,12 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:moon="http://schemas.android.com/apk/res/com.iguyue.canvas"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <com.iguyue.canvas.widget.MagnifierImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        moon:radius="100dp" />
+
+</RelativeLayout>

@@ -259,11 +259,11 @@ public class RotateCircleView extends View {
 		int action = event.getActionMasked();
 		switch (action) {
 		case MotionEvent.ACTION_DOWN: {
-			firstY = event.getY();
+			firstY = event.getX();
 			return true;
 		}
 		case MotionEvent.ACTION_MOVE: {
-			float y = event.getY();
+			float y = event.getX();
 			rotateX = Math.abs(y - firstY) / 10;
 			rotateX = rotateX > 90 ? 90 : rotateX;
 			mRingPaint.setAlpha((int) (255 * (90 - rotateX) / 90));
