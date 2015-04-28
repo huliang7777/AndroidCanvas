@@ -24,7 +24,7 @@ import android.view.View;
  * 波浪球View
  * 
  * @author moon
- *
+ * 
  */
 public class WaveBallView extends View {
 	private final float DEFUALT_RADIUS = 100.0f;
@@ -187,13 +187,15 @@ public class WaveBallView extends View {
 		Path path = new Path();
 		path.lineTo(0, height);
 		for (int i = 1; i <= width; i++) {
+
 			int m = i + initPos;
-			path.lineTo(
-					i,
-					(int) (height * (1 - percent) + WAVE_HEIGHT)
+
+			path.lineTo( i, (int) (height * (1 - percent) + WAVE_HEIGHT)
 							+ Math.round(Math.sin(Math.PI * (double) m / width)
 									* WAVE_HEIGHT));
+
 		}
+
 		path.lineTo(width, height);
 		path.lineTo(0, height);
 		tempCanvas.drawPath(path, mWavePaint);
