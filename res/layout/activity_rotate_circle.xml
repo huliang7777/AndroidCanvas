@@ -2,17 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:moon="http://schemas.android.com/apk/res/com.iguyue.canvas"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin" >
+    android:layout_height="wrap_content" >
 
-    <com.iguyue.canvas.widget.WaveBallView 
+    <com.iguyue.canvas.widget.RotateCircleView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        moon:percent="0.7"
+        moon:percent="0.0"
         moon:radius="100dp"/>
 
 </RelativeLayout>
