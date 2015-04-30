@@ -2,6 +2,7 @@ package com.iguyue.canvas.common;
 
 import android.content.Context;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 
 public class Utils {
@@ -14,6 +15,7 @@ public class Utils {
 	 */
 	public static float dp2px(Context context, float dp) {
 		DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+		Log.d( "TextRollCycleView", "" + metrics.heightPixels);
 		return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
 				metrics);
 	}

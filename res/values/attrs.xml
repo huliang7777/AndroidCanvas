@@ -5,5 +5,8 @@
     	<attr name="background_color" format="color" />
     	<attr name="color" format="color" />
     	<attr name="percent" format="float" />
+    	<attr name="show_num" format="integer" />
+    	<attr name="per_height" format="dimension" />
+    	<attr name="text_size" format="dimension" />
     </declare-styleable>
 </resources>

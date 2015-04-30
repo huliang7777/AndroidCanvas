@@ -1,0 +1,16 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:moon="http://schemas.android.com/apk/res/com.iguyue.canvas"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#EE309B55" >
+
+    <com.iguyue.canvas.widget.TextRollCycleView
+        android:id="@+id/text_roll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        moon:show_num="5"
+        moon:text_size="30sp"
+        moon:color="@android:color/white" />
+
+</RelativeLayout>
