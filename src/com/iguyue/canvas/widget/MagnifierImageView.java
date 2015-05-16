@@ -23,6 +23,13 @@ import android.view.View;
  * @author moon
  *
  */
+/**
+ * 正则替换
+ * COLUMN_([^, & ^$]*);
+ * COLUMN_$1 = "$1 ";
+ * @author Administrator
+ *
+ */
 public class MagnifierImageView extends View
 {
 	private final static float DEFAULT_RADIUS = 100;
