@@ -3,6 +3,7 @@ package com.iguyue.canvas.widget;
 import java.util.Stack;
 
 import com.iguyue.canvas.abstracts.Dynamics;
+import com.iguyue.canvas.abstracts.SimpleDynamic;
 import com.iguyue.canvas.common.Utils;
 
 import android.annotation.SuppressLint;
@@ -13,8 +14,10 @@ import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ListAdapter;
 
@@ -108,6 +111,8 @@ public class MoonListView extends AdapterView<ListAdapter>
 	
 	private Dynamics mDynamics;
 	private Runnable mDynamicsRunnable;
+	private VelocityTracker mVelocityTracker;
+	private static final int PIXELS_PER_SECOND = 1000;
 	
 	public MoonListView(Context context) 
 	{
@@ -130,6 +135,30 @@ public class MoonListView extends AdapterView<ListAdapter>
 		mTouchSlop = ViewConfiguration.get( getContext() ).getScaledTouchSlop();
 		mVibrator = (Vibrator) getContext().getSystemService( Context.VIBRATOR_SERVICE );
 		vibrators = new long[]{ 100, 400 };
+		
+		mDynamics = new SimpleDynamic( 0.95f );
+		mDynamicsRunnable = new Runnable() 
+		{
+			private static final float VELOCITY_TOLERANCE = 0.7f;
+			
+			@Override
+			public void run() 
+			{
+				if ( getChildCount() > 0 )
+				{
+					mListTopStart = getChildAt( 0 ).getTop() - mListTopOffset;
+				}
+				
+				mDynamics.update( AnimationUtils.currentAnimationTimeMillis() );
+				
+				scrollList( (int) (mDynamics.getmPosition() - mListTopStart) );
+				
+				if ( !mDynamics.isAtRest( VELOCITY_TOLERANCE ) )
+				{
+					postDelayed( this, 16 );
+				}
+			}
+		};
 	}
 
 	@Override
@@ -182,8 +211,8 @@ public class MoonListView extends AdapterView<ListAdapter>
 		else
 		{
 			int offset = mListTop + mListTopOffset - getChildAt( 0 ).getTop();
-			Log.e(VIEW_LOG_TAG, "getChildAt( 0 ).getTop() : " + getChildAt( 0 ).getTop() );
-			Log.e(VIEW_LOG_TAG, "offset : " + offset );
+//			Log.e(VIEW_LOG_TAG, "getChildAt( 0 ).getTop() : " + getChildAt( 0 ).getTop() );
+//			Log.e(VIEW_LOG_TAG, "offset : " + offset );
 			// 删除不可见的view
 			removeNonVisibleViews( offset );
 			fillList( offset );
@@ -317,15 +346,15 @@ public class MoonListView extends AdapterView<ListAdapter>
 	private void layoutChildren()
 	{
 		int top = mListTop + mListTopOffset;
-		Log.e(VIEW_LOG_TAG, "top : " + top );
+//		Log.e(VIEW_LOG_TAG, "top : " + top );
 		int width = getWidth();
 		int childCount = getChildCount();
 		
 		for ( int i=0;i<childCount;i++ )
 		{
 			View child = getChildAt( i );
-			int widthChild = child.getMeasuredWidth() + child.getPaddingLeft() + child.getPaddingRight();
-			int heightChild = child.getMeasuredHeight() + child.getPaddingTop() + child.getPaddingBottom();
+			int widthChild = child.getMeasuredWidth();
+			int heightChild = child.getMeasuredHeight();
 			int left = ( width - widthChild ) / 2;
 			child.layout( left, top, left + widthChild, top + heightChild );
 			top += heightChild + Utils.dp2px( getContext(), 1 );
@@ -338,11 +367,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 		switch ( event.getAction() ) 
 		{
 			case MotionEvent.ACTION_MOVE:
-				return startScrollIfNeed( event );
-			case MotionEvent.ACTION_CANCEL:
-			case MotionEvent.ACTION_UP:
-				endTouch();
-				break;
+				return startScrollIfNeeded( event );
 		}
 		return false;
 	}
@@ -366,15 +391,26 @@ public class MoonListView extends AdapterView<ListAdapter>
 				onTouchMove( event );
 				break;
 			case MotionEvent.ACTION_CANCEL:
-				endTouch();
+				if ( curTouchState == TOUCH_STATE_CLICK )
+				{
+					removeLongClickCheck();
+				}
+				endTouch( 0 );
 				break;
 			case MotionEvent.ACTION_UP:
+				float velocity = 0;
 				if ( curTouchState == TOUCH_STATE_CLICK )
 				{
 					removeLongClickCheck();
 					clickChildAt( (int)event.getX(), (int)event.getY() );
 				}
-				endTouch();
+				else if ( curTouchState == TOUCH_STATE_SCROLL )
+				{
+					mVelocityTracker.addMovement( event );
+					mVelocityTracker.computeCurrentVelocity( PIXELS_PER_SECOND );
+					velocity = mVelocityTracker.getYVelocity();
+				}
+				endTouch( velocity );
 				break;
 		}
 		return true;
@@ -392,11 +428,22 @@ public class MoonListView extends AdapterView<ListAdapter>
 		
 		// 记录第一个子view的top位置
 		mListTopStart = getChildAt( 0 ).getTop() - mListTopOffset;
-		Log.e(VIEW_LOG_TAG, "mListTopStart : " + mListTopStart );
+//		Log.e(VIEW_LOG_TAG, "mListTopStart : " + mListTopStart );
 		
 		curTouchState = TOUCH_STATE_CLICK;
 		// 长按检测
-		startLongCheck();
+		startLongClickCheck();
+		
+		if ( mDynamicsRunnable != null )
+		{
+			removeCallbacks( mDynamicsRunnable );
+		}
+		
+		if ( mVelocityTracker == null )
+		{
+			mVelocityTracker = VelocityTracker.obtain();
+			mVelocityTracker.addMovement( event );
+		}
 	}
 	
 	/**
@@ -407,11 +454,12 @@ public class MoonListView extends AdapterView<ListAdapter>
 	{
 		if ( curTouchState == TOUCH_STATE_CLICK )
 		{
-			startScrollIfNeed( event );
+			startScrollIfNeeded( event );
 		}
 		
 		if ( curTouchState == TOUCH_STATE_SCROLL )
 		{
+			mVelocityTracker.addMovement( event );
 			// 计算滑动的距离
 			int scrollDistance = (int)event.getY() - mTouchStartY;
 			scrollList( scrollDistance );
@@ -422,7 +470,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 	 * 根据需要是否进行滚动
 	 * @param scrolledDistance
 	 */
-	private boolean startScrollIfNeed( MotionEvent event )
+	private boolean startScrollIfNeeded( MotionEvent event )
 	{
 		// 计算滑动的距离
 		int scrollDistance = (int)event.getY() - mTouchStartY;
@@ -444,8 +492,8 @@ public class MoonListView extends AdapterView<ListAdapter>
 	{
 		// 重新计算List top的位置
 		mListTop = mListTopStart + scrolledDistance;
-		Log.e(VIEW_LOG_TAG, "mListTop : " + mListTop );
-		Log.e(VIEW_LOG_TAG, "mListTopOffset : " + mListTopOffset );
+//		Log.e(VIEW_LOG_TAG, "mListTop : " + mListTop );
+//		Log.e(VIEW_LOG_TAG, "mListTopOffset : " + mListTopOffset );
 		if ( mListTop > 0 && mFirstItemPosition == 0 )
 		{
 			mListTop = 0;
@@ -464,7 +512,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 	/**
 	 * 开始长按检测
 	 */
-	private void startLongCheck()
+	private void startLongClickCheck()
 	{
 		if( mLongClickRunnable == null )
 		{
@@ -559,17 +607,22 @@ public class MoonListView extends AdapterView<ListAdapter>
 	/**
 	 * 触摸结束
 	 */
-	private void endTouch()
+	private void endTouch( float velocity )
 	{
+		mVelocityTracker.recycle();
+		mVelocityTracker = null;
 		curTouchState = TOUCH_STATE_RESET;
+		
+		if ( mDynamics != null )
+		{
+			mDynamics.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
+			post( mDynamicsRunnable );
+		}
 	}
 	
 	@Override
 	protected boolean drawChild( Canvas canvas, View child, long drawingTime ) 
 	{
-		
-		
-		
 		return super.drawChild(canvas, child, drawingTime);
 	}
 }
