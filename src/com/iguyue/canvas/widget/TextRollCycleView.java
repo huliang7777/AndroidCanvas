@@ -115,7 +115,7 @@ public class TextRollCycleView extends View
 		int length = texts.size();
 		float scrollY = ( currentY + deltaY ) % perHeight;
 		float percent = scrollY / perHeight;
-		Log.d( "TextRollCycleView", ( currentY + deltaY ) + "-" + deltaNum + "-" + scrollY + "-" + percent );
+//		Log.d( "TextRollCycleView", ( currentY + deltaY ) + "-" + deltaNum + "-" + scrollY + "-" + percent );
 		for ( int i=0; i<size; i++ )
 		{
 			// 根据偏移的个数计算需要显示的数据索引
@@ -141,13 +141,13 @@ public class TextRollCycleView extends View
 			{
 				textSize = fontSize * ( ( midSize ) - Math.abs( i - midSize ) ) / ( 1 + midSize ) - percent * fontSize / ( 1 + midSize );
 				alpha = (int)( 255 * ( ( midSize ) - Math.abs( i - midSize ) ) / ( 1 + midSize ) - percent * 255 / ( 1 + midSize ) );
-				Log.d( "TextRollCycleView", i + "-textSize1-" + textSize );
+//				Log.d( "TextRollCycleView", i + "-textSize1-" + textSize );
 			}
 			else
 			{
 				textSize = fontSize * ( ( midSize ) - Math.abs( i - midSize ) ) / ( 1 + midSize ) + percent * fontSize / ( 1 + midSize );
 				alpha = (int)( 255 * ( ( midSize ) - Math.abs( i - midSize ) ) / ( 1 + midSize ) + percent * 255 / ( 1 + midSize ) );
-				Log.d( "TextRollCycleView", i + "-textSize2-" + textSize );
+//				Log.d( "TextRollCycleView", i + "-textSize2-" + textSize );
 			}
 
 			mPaint.setTextSize( textSize );
