@@ -183,6 +183,8 @@ public class TextRollCycleView extends View
 				currentY += deltaY;
 				deltaY = 0;
 //				currentY %= texts.size() * perHeight;
+				// 计算偏移个数
+				deltaNum = Math.round( currentY / perHeight ) % texts.size();
 				currentY = deltaNum * perHeight;
 				invalidate();
 				isTouch = false;
@@ -214,7 +216,7 @@ public class TextRollCycleView extends View
 						{
 							e.printStackTrace();
 						}
-						continue;
+						break;
 					}
 					currentY += ( perHeight / ( 1000 / 50 ) );
 					// 计算偏移个数
