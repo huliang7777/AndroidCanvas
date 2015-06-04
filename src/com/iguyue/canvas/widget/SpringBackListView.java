@@ -10,6 +10,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -26,7 +28,7 @@ import android.widget.ListAdapter;
  *
  */
 @SuppressLint("ClickableViewAccessibility")
-public class MoonListView extends AdapterView<ListAdapter> 
+public class SpringBackListView extends AdapterView<ListAdapter> 
 {
 	/**
 	 * 第一次触摸的x坐标
@@ -94,8 +96,6 @@ public class MoonListView extends AdapterView<ListAdapter>
 	 */
 	private static final int TOUCH_STATE_FLING = 3;
 	
-	private static final int INVALID_INDEX = -1;
-	
 	/**
 	 * 当前触摸状态
 	 */
@@ -129,15 +129,31 @@ public class MoonListView extends AdapterView<ListAdapter>
 	 */
 	private static final int PIXELS_PER_SECOND = 1000;
 	
-	private int mLastSnapPos = Integer.MIN_VALUE;
+	/**
+	 * 选中item背景颜色
+	 */
+	private static final int SELECTOR_COLOR = 0xDDEFEEEF;
 	
-	public MoonListView(Context context) 
+	/**
+	 * 选中item位置
+	 */
+	private int mSelectedPosition;
+	/**
+	 * 选中的区域
+	 */
+	private Rect mSelectorRect;
+	/**
+	 * 图片用于绘制选中item背景
+	 */
+	private Drawable mSelector;
+	
+	public SpringBackListView(Context context) 
 	{
 		super(context);
 		init();
 	}
 	
-	public MoonListView(Context context, AttributeSet attrs) 
+	public SpringBackListView(Context context, AttributeSet attrs) 
 	{
 		super(context, attrs);
 		init();
@@ -152,6 +168,9 @@ public class MoonListView extends AdapterView<ListAdapter>
 		mTouchSlop = ViewConfiguration.get( getContext() ).getScaledTouchSlop();
 		mVibrator = (Vibrator) getContext().getSystemService( Context.VIBRATOR_SERVICE );
 		vibrators = new long[]{ 100, 400 };
+		mSelectedPosition = INVALID_POSITION;
+		mSelectorRect = new Rect();
+		mSelector = new ColorDrawable( SELECTOR_COLOR );
 		
 		// 初始化一个摩擦阻力的滚动效果
 		mScrollEffect = new FrictionScrollEffect( 0.95f, 0.6f );
@@ -178,6 +197,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 				// 如果没有达到最小速度，则一直滚动
 				if ( !mScrollEffect.isStopScroll( VELOCITY_TOLERANCE, POSITION_TOLERANCE ) )
 				{
+					// 新的一帧进行调用
 					postDelayed( this, 16 );
 				}
 				else
@@ -213,7 +233,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 	}
 
 	@Override
-	public void setSelection(int position) 
+	public void setSelection( int position ) 
 	{
 		
 	}
@@ -467,6 +487,8 @@ public class MoonListView extends AdapterView<ListAdapter>
 			curTouchState = TOUCH_STATE_CLICK;
 			// 长按检测
 			startLongClickCheck();
+			// 设置选中item状态
+			positionSelector();
 		}
 		
 		if ( mScrollEffectRunnable != null )
@@ -498,7 +520,23 @@ public class MoonListView extends AdapterView<ListAdapter>
 			// 计算滑动的距离
 			int scrollDistance = (int)event.getY() - mTouchStartY;
 			scrollList( scrollDistance );
+			mSelectorRect.setEmpty();
 		}
+	}
+	
+	/**
+	 * 设置选中item状态
+	 */
+	private void positionSelector()
+	{
+		mSelectedPosition = getContainChildIndex( mTouchStartX, mTouchStartY );
+		if ( mSelectedPosition != INVALID_POSITION )
+		{
+			View sel = getChildAt( mSelectedPosition );
+			mSelectorRect.set( sel.getLeft(), sel.getTop(), sel.getRight(), sel.getBottom() );
+		}
+		
+		invalidate();
 	}
 	
 	/**
@@ -545,14 +583,13 @@ public class MoonListView extends AdapterView<ListAdapter>
 				&& mLastItemPosition == mAdapter.getCount() - 1
 				&& getChildAt(getChildCount() - 1).getBottom() < getHeight() ) 
 		{
-			mLastSnapPos = maxDistance;
-			mScrollEffect.setMinDestPosition(mLastSnapPos);
-			mScrollEffect.setMaxDestPosition(mLastSnapPos);
+			mScrollEffect.setMinDestPosition( maxDistance );
+			mScrollEffect.setMaxDestPosition( maxDistance );
 			
 			// 限制底部最大滚动距离，只能滚出超过屏幕一般的距离( 滚动距离为负数 )
-			if ( mListTop < mLastSnapPos - maxOffset )
+			if ( mListTop < maxDistance - maxOffset )
 			{
-				mListTop = mLastSnapPos - maxOffset;
+				mListTop = maxDistance - maxOffset;
 			}
 		}
 		// 顶部超过最小目标位置坐标，进行回弹
@@ -560,14 +597,13 @@ public class MoonListView extends AdapterView<ListAdapter>
 				&& mListTop > 0 
 				&& mFirstItemPosition == 0 )
 		{
-			mLastSnapPos = 0;
-			mScrollEffect.setMinDestPosition(mLastSnapPos);
-			mScrollEffect.setMaxDestPosition(mLastSnapPos);
+			mScrollEffect.setMinDestPosition( 0 );
+			mScrollEffect.setMaxDestPosition( 0 );
 			
 			// 限制顶部最大滚动距离，只能滚出超过屏幕一般的距离( 滚动距离为正数 )
-			if ( mListTop > mLastSnapPos + maxOffset )
+			if ( mListTop > maxOffset )
 			{
-				mListTop = mLastSnapPos + maxOffset;
+				mListTop = maxOffset;
 			}
 		}
 		
@@ -622,7 +658,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 	private void clickChildAt( int x, int y )
 	{
 		int index = getContainChildIndex( x, y );
-		if ( index != INVALID_INDEX )
+		if ( index != INVALID_POSITION )
 		{
 			int position = mFirstItemPosition + index;
 			long id = mAdapter.getItemId( position );
@@ -636,7 +672,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 	 */
 	private void longClickChildAt( int index )
 	{
-		if ( index != INVALID_INDEX )
+		if ( index != INVALID_POSITION )
 		{
 			// 执行震动操作
 			mVibrator.vibrate( vibrators, -1 );
@@ -668,7 +704,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 				return i;
 			}
 		}
-		return INVALID_INDEX;
+		return INVALID_POSITION;
 	}
 	
 	/**
@@ -679,6 +715,7 @@ public class MoonListView extends AdapterView<ListAdapter>
 		mVelocityTracker.recycle();
 		mVelocityTracker = null;
 //		curTouchState = TOUCH_STATE_RESET;
+		mSelectorRect.setEmpty();
 		
 		// 根据滚动速度进行惯性滚动
 		if ( mScrollEffect != null )
@@ -695,11 +732,25 @@ public class MoonListView extends AdapterView<ListAdapter>
 			mScrollEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
 			post( mScrollEffectRunnable );
 		}
+		invalidate();
+	}
+	
+	@Override
+	protected void dispatchDraw(Canvas canvas) 
+	{
+		// 绘制选中器,绘制在item底部
+		if ( !mSelectorRect.isEmpty() )
+		{
+			mSelector.setBounds( mSelectorRect );
+			mSelector.draw( canvas );
+		}
+		super.dispatchDraw(canvas);
 	}
 	
 	@Override
 	protected boolean drawChild( Canvas canvas, View child, long drawingTime ) 
 	{
+		
 		return super.drawChild(canvas, child, drawingTime);
 	}
 }

@@ -2,7 +2,7 @@ package com.iguyue.canvas;
 
 import java.util.ArrayList;
 
-import com.iguyue.canvas.widget.MoonListView;
+import com.iguyue.canvas.widget.SpringBackListView;
 import com.iguyue.canvas.widget.TextRollCycleView;
 
 import android.app.Activity;
@@ -27,7 +27,7 @@ public class MainActivity extends Activity {
 		
 //		TextRollCycleView view = (TextRollCycleView) findViewById( R.id.text_roll );
 		
-		MoonListView listView = (MoonListView) findViewById( R.id.list_view );
+		SpringBackListView listView = (SpringBackListView) findViewById( R.id.list_view );
 		
 		final ArrayList<String> datas = new ArrayList<String>();
 		datas.add( "我是中国大亨 " );

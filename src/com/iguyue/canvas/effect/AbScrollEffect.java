@@ -12,7 +12,7 @@ public abstract class AbScrollEffect
 	/**
 	 * 最大时间
 	 */
-	private static final int MAX_TIMESTEP = 50;
+	private static final int MAX_TIMESTEP = 100;
 	/**
 	 * 当前位置
 	 */
@@ -132,7 +132,7 @@ public abstract class AbScrollEffect
 		}
 		Log.e( "mVelocity", "mMinDestPosition-mMaxDestPosition-reverseDistance : "
 				+ mMinDestPosition + "-" + mMaxDestPosition + "-" + reverseDistance );
-		return reverseDistance;
+		return reverseDistance / 2;
 	}
 	
 	/**
