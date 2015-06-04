@@ -2,8 +2,7 @@ package com.iguyue.canvas;
 
 import java.util.ArrayList;
 
-import com.iguyue.canvas.widget.SpringBackListView;
-import com.iguyue.canvas.widget.TextRollCycleView;
+import com.iguyue.canvas.widget.EdgeBoundListView;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -27,7 +26,7 @@ public class MainActivity extends Activity {
 		
 //		TextRollCycleView view = (TextRollCycleView) findViewById( R.id.text_roll );
 		
-		SpringBackListView listView = (SpringBackListView) findViewById( R.id.list_view );
+		EdgeBoundListView listView = (EdgeBoundListView) findViewById( R.id.list_view );
 		
 		final ArrayList<String> datas = new ArrayList<String>();
 		datas.add( "我是中国大亨 " );
