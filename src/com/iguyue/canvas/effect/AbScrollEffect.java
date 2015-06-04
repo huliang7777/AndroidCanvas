@@ -68,7 +68,7 @@ public abstract class AbScrollEffect
 		final boolean standingStill = Math.abs(mVelocity) < velocityTolerance;
 		final boolean withinMinLimits = mPosition + positionTolerance > mMinDestPosition;
 		final boolean withinMaxLimits = mPosition - positionTolerance < mMaxDestPosition;
-		return standingStill &&  withinMinLimits && withinMaxLimits;
+		return standingStill && withinMinLimits && withinMaxLimits;
 	}
 	
 	/**
@@ -130,9 +130,9 @@ public abstract class AbScrollEffect
 		{
 			reverseDistance = mMinDestPosition - mPosition;
 		}
-		Log.e( "mVelocity", "mMinDestPosition-mMaxDestPosition-reverseDistance : "
-				+ mMinDestPosition + "-" + mMaxDestPosition + "-" + reverseDistance );
-		return reverseDistance / 2;
+//		Log.e( "mVelocity", "mMinDestPosition-mMaxDestPosition-reverseDistance : "
+//				+ mMinDestPosition + "-" + mMaxDestPosition + "-" + reverseDistance );
+		return reverseDistance;
 	}
 	
 	/**

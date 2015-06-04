@@ -128,6 +128,10 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 	 * 滚动速度的单位
 	 */
 	private static final int PIXELS_PER_SECOND = 1000;
+	/**
+	 * 最小滚动速度
+	 */
+	private static float VELOCITY_TOLERANCE;
 	
 	/**
 	 * 选中item背景颜色
@@ -171,14 +175,14 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 		mSelectedPosition = INVALID_POSITION;
 		mSelectorRect = new Rect();
 		mSelector = new ColorDrawable( SELECTOR_COLOR );
+		VELOCITY_TOLERANCE = ViewConfiguration.get( getContext() ).getScaledMinimumFlingVelocity();
 		
 		// 初始化一个摩擦阻力的滚动效果
 		mScrollEffect = new FrictionScrollEffect( 0.95f, 0.6f );
 		// 滚动效果可执行类，执行滚动效果
 		mScrollEffectRunnable = new Runnable() 
 		{
-			private static final float VELOCITY_TOLERANCE = 0.95F;
-			private static final float POSITION_TOLERANCE = 0.95F;
+			private static final float POSITION_TOLERANCE = 0.5F;
 			
 			@Override
 			public void run() 

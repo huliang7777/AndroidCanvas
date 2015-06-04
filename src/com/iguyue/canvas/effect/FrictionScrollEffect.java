@@ -47,7 +47,7 @@ public class FrictionScrollEffect extends AbScrollEffect
 		// 逐步减少速度
 		mVelocity *= mFrictionFactor;
 		
-		Log.e( "mVelocity", "mVelocity : " + mVelocity );
+//		Log.e( "mVelocity", "mVelocity : " + mVelocity );
 	}
 
 }

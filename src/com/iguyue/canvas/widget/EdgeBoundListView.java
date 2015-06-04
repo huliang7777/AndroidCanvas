@@ -14,6 +14,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Vibrator;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -128,6 +129,10 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 * 滚动速度的单位
 	 */
 	private static final int PIXELS_PER_SECOND = 1000;
+	/**
+	 * 最小滚动速度
+	 */
+	private static float VELOCITY_TOLERANCE;
 	
 	/**
 	 * 选中item背景颜色
@@ -171,14 +176,14 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		mSelectedPosition = INVALID_POSITION;
 		mSelectorRect = new Rect();
 		mSelector = new ColorDrawable( SELECTOR_COLOR );
+		VELOCITY_TOLERANCE = ViewConfiguration.get( getContext() ).getScaledMinimumFlingVelocity();
 		
 		// 初始化一个摩擦阻力的滚动效果
 		mScrollEffect = new FrictionScrollEffect( 0.95f, 0.6f );
 		// 滚动效果可执行类，执行滚动效果
 		mScrollEffectRunnable = new Runnable() 
 		{
-			private static final float VELOCITY_TOLERANCE = 5.95F;
-			private static final float POSITION_TOLERANCE = 0.95F;
+			private static final float POSITION_TOLERANCE = 0.5F;
 			
 			@Override
 			public void run() 
@@ -187,6 +192,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 				{
 					mListTopStart = getChildAt( 0 ).getTop() - mListTopOffset;
 				}
+				
 				
 				// 根据时间更新速度和位置
 				mScrollEffect.update( AnimationUtils.currentAnimationTimeMillis() );
@@ -267,6 +273,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		}
 		
 		layoutChildren();
+		adjustViewsUpOrDown();
 	}
 	
 	/**
@@ -334,14 +341,15 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 */
 	private void removeNonVisibleViews( int offset ) 
 	{
-		if ( getChildCount() == 0)
+		if ( getChildCount() == 0 )
 		{
 			return;
 		}
 		
 		View firstView = getChildAt( 0 );
 		View lastView = getChildAt( getChildCount() - 1 );
-		while ( firstView != null && offset < 0 && firstView.getBottom() + offset < 0 )
+
+		if ( firstView != null && offset < 0 && firstView.getBottom() + offset < 0 )
 		{
 			removeViewInLayout( firstView );
 			mCachedViews.add( firstView );
@@ -349,7 +357,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			++mFirstItemPosition;
 			firstView = getChildAt( 0 );
 		}
-		while ( lastView != null && offset > 0 && lastView.getTop() + offset > getHeight() )
+		if ( lastView != null && offset > 0 && lastView.getTop() + offset > getHeight() )
 		{
 			removeViewInLayout( lastView );
 			mCachedViews.add( lastView );
@@ -407,6 +415,54 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			child.layout( left, top, left + widthChild, top + heightChild );
 			top += heightChild + Utils.dp2px( getContext(), 1 );
 		}
+	}
+	
+	/**
+     * 调整item的位置
+     * 确保最顶部和最底部都能保持合适的距离
+	 */
+	private void adjustViewsUpOrDown()
+	{
+		View firstView = getChildAt( 0 );
+		View lastView = getChildAt( getChildCount() - 1 );
+		
+		int offset = 0;
+		// 底部超过最大目标位置坐标
+		if ( mLastItemPosition == mAdapter.getCount() - 1
+				&& lastView.getBottom() <= getHeight() ) 
+		{
+			offset = getHeight() - lastView.getBottom();
+		}
+        
+		// 顶部超过最小目标位置坐标，进行回弹
+		if ( mFirstItemPosition == 0 
+				&& firstView.getTop() >= 0 )
+		{
+			offset = -firstView.getTop();
+		}
+		if ( offset != 0 )
+		{
+			offsetChildrenTopAndBottom( offset );
+		}
+	}
+	
+	/**
+	 * 移动子view的top和bottom
+	 * @param offset
+	 */
+	private void offsetChildrenTopAndBottom( int offset )
+	{
+		int childCount = getChildCount();
+		
+		for ( int i=0;i<childCount;i++ )
+		{
+			View child = getChildAt( i );
+			child.layout( child.getLeft(), child.getTop() + offset, child.getRight(), child.getBottom() + offset );
+		}
+		
+		mListTop += offset;
+		Log.e(VIEW_LOG_TAG, "offsetChildrenTopAndBottom-mListTop : " + mListTop );
+		Log.e(VIEW_LOG_TAG, "offsetChildrenTopAndBottom-childCount : " + childCount );
 	}
 	
 	@Override
@@ -565,32 +621,48 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	{
 		// 重新计算List top的位置
 		mListTop = mListTopStart + scrolledDistance;
-//		Log.e(VIEW_LOG_TAG, "mListTop : " + mListTop );
 //		Log.e(VIEW_LOG_TAG, "mListTopOffset : " + mListTopOffset );
 
 		View firstView = getChildAt( 0 );
 		View lastView = getChildAt( getChildCount() - 1 );
-		int maxDistance = mListTop;
-		if ( firstView != null && lastView != null )
-		{
-			maxDistance = firstView.getTop() - mListTopOffset - ( lastView.getBottom() - getHeight() );
-		}
-			
-		// 底部超过最大目标位置坐标，进行回弹
-		if ( mLastItemPosition == mAdapter.getCount() - 1
-				&& mListTop < maxDistance ) 
-		{
-			mListTop = maxDistance;
-		}
-		// 顶部超过最小目标位置坐标，进行回弹
-		if ( scrolledDistance > 0 
-				&& mListTop > 0 
-				&& mFirstItemPosition == 0 )
-		{
-			mListTop = 0;
-		}
+//		int maxDistance = mListTop;
+//		if ( firstView != null && lastView != null )
+//		{
+//			maxDistance = firstView.getTop() - mListTopOffset - ( lastView.getBottom() - getHeight() );
+//		}
+//			
+//		final boolean cannotScrollDown = ( mFirstItemPosition == 0 &&
+//				firstView.getTop() >= 0 && scrolledDistance >= 0 );
+//        final boolean cannotScrollUp = ( mLastItemPosition == mAdapter.getCount() - 1 &&
+//        		lastView.getBottom() <= getHeight() && scrolledDistance <= 0);
+//        
+//		// 底部超过最大目标位置坐标，进行回弹
+//		if ( mLastItemPosition == mAdapter.getCount() - 1
+//				&& mListTop < maxDistance ) 
+////        if ( cannotScrollUp )
+//		{
+//			mListTop = maxDistance;
+//		}
+//        
+//		// 顶部超过最小目标位置坐标，进行回弹
+//		if ( scrolledDistance > 0 
+//				&& mListTop > 0 )
+////        if ( cannotScrollDown )
+//		{
+//			mListTop = 0;
+//		}
 		
+		final boolean cannotScrollDown = ( mFirstItemPosition == 0 &&
+				firstView.getTop() >= 0 && scrolledDistance >= 0 );
+        final boolean cannotScrollUp = ( mLastItemPosition == mAdapter.getCount() - 1 &&
+        		lastView.getBottom() <= getHeight() && scrolledDistance <= 0);
+        
+        if ( cannotScrollDown || cannotScrollUp )
+        {
+        	return;
+        }
 		
+		Log.e(VIEW_LOG_TAG, "mListTop : " + mListTop );
 		// 请求重新绘制
 		requestLayout();
 	}
