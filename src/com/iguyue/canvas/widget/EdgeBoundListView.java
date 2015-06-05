@@ -3,8 +3,8 @@ package com.iguyue.canvas.widget;
 import java.util.Stack;
 
 import com.iguyue.canvas.common.Utils;
-import com.iguyue.canvas.effect.AbScrollEffect;
-import com.iguyue.canvas.effect.FrictionScrollEffect;
+import com.iguyue.canvas.effect.AbFlingEffect;
+import com.iguyue.canvas.effect.EdgeBoundFlingEffect;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -114,13 +114,13 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	private long[] vibrators;
 	
 	/**
-	 * 滚动效果类
+	 * 惯性滚动效果类
 	 */
-	private AbScrollEffect mScrollEffect;
+	private AbFlingEffect mFlingEffect;
 	/**
-	 * 滚动效果可执行类
+	 * 惯性滚动效果可执行类
 	 */
-	private Runnable mScrollEffectRunnable;
+	private Runnable mFlingEffectRunnable;
 	/**
 	 * 滚动速度检测类
 	 */
@@ -132,7 +132,11 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	/**
 	 * 最小滚动速度
 	 */
-	private static float VELOCITY_TOLERANCE;
+	private static float mMinFlingVelocity;
+	/**
+	 * 最大滚动速度
+	 */
+	private static float mMaxFlingVelocity;
 	
 	/**
 	 * 选中item背景颜色
@@ -170,18 +174,19 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	private void init()
 	{
 		curTouchState = TOUCH_STATE_RESET;
-		mTouchSlop = ViewConfiguration.get( getContext() ).getScaledTouchSlop();
 		mVibrator = (Vibrator) getContext().getSystemService( Context.VIBRATOR_SERVICE );
 		vibrators = new long[]{ 100, 400 };
 		mSelectedPosition = INVALID_POSITION;
 		mSelectorRect = new Rect();
 		mSelector = new ColorDrawable( SELECTOR_COLOR );
-		VELOCITY_TOLERANCE = ViewConfiguration.get( getContext() ).getScaledMinimumFlingVelocity();
+		mTouchSlop = ViewConfiguration.get( getContext() ).getScaledTouchSlop();
+		mMinFlingVelocity = ViewConfiguration.get( getContext() ).getScaledMinimumFlingVelocity();
+		mMaxFlingVelocity = ViewConfiguration.get( getContext() ).getScaledMaximumFlingVelocity();
 		
-		// 初始化一个摩擦阻力的滚动效果
-		mScrollEffect = new FrictionScrollEffect( 0.95f, 0.6f );
-		// 滚动效果可执行类，执行滚动效果
-		mScrollEffectRunnable = new Runnable() 
+		// 初始化一个摩擦阻力的惯性滚动效果
+		mFlingEffect = new EdgeBoundFlingEffect( 0.95f );
+		// 惯性滚动效果可执行类，执行惯性滚动效果
+		mFlingEffectRunnable = new Runnable() 
 		{
 			private static final float POSITION_TOLERANCE = 0.5F;
 			
@@ -195,13 +200,13 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 				
 				
 				// 根据时间更新速度和位置
-				mScrollEffect.update( AnimationUtils.currentAnimationTimeMillis() );
+				mFlingEffect.update( AnimationUtils.currentAnimationTimeMillis() );
 				
 				// 根据偏移量进行滚动
-				scrollList( (int) (mScrollEffect.getPosition() - mListTopStart) );
+				scrollList( (int) (mFlingEffect.getPosition() - mListTopStart) );
 				
 				// 如果没有达到最小速度，则一直滚动
-				if ( !mScrollEffect.isStopScroll( VELOCITY_TOLERANCE, POSITION_TOLERANCE ) )
+				if ( !mFlingEffect.isStopScroll( mMinFlingVelocity, POSITION_TOLERANCE ) )
 				{
 					// 新的一帧进行调用
 					postDelayed( this, 16 );
@@ -209,7 +214,6 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 				else
 				{
 					curTouchState = TOUCH_STATE_RESET;
-					mScrollEffect.setVelocity( 0 );
 				}
 			}
 		}; 
@@ -511,7 +515,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 				else if ( curTouchState == TOUCH_STATE_SCROLL )
 				{
 					mVelocityTracker.addMovement( event );
-					mVelocityTracker.computeCurrentVelocity( PIXELS_PER_SECOND );
+					mVelocityTracker.computeCurrentVelocity( PIXELS_PER_SECOND, mMaxFlingVelocity );
 					velocity = mVelocityTracker.getYVelocity();
 				}
 				endTouch( velocity );
@@ -547,9 +551,9 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			positionSelector();
 		}
 		
-		if ( mScrollEffectRunnable != null )
+		if ( mFlingEffectRunnable != null )
 		{
-			removeCallbacks( mScrollEffectRunnable );
+			removeCallbacks( mFlingEffectRunnable );
 		}
 		
 		if ( mVelocityTracker == null )
@@ -557,6 +561,9 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			mVelocityTracker = VelocityTracker.obtain();
 			mVelocityTracker.addMovement( event );
 		}
+		
+		mFlingEffect.setMaxDestPosition( Float.MAX_VALUE );
+		mFlingEffect.setMinDestPosition( -Float.MAX_VALUE );
 	}
 	
 	/**
@@ -590,9 +597,8 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		{
 			View sel = getChildAt( mSelectedPosition );
 			mSelectorRect.set( sel.getLeft(), sel.getTop(), sel.getRight(), sel.getBottom() );
+			invalidate( mSelectorRect );
 		}
-		
-		invalidate();
 	}
 	
 	/**
@@ -625,42 +631,34 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 
 		View firstView = getChildAt( 0 );
 		View lastView = getChildAt( getChildCount() - 1 );
-//		int maxDistance = mListTop;
-//		if ( firstView != null && lastView != null )
-//		{
-//			maxDistance = firstView.getTop() - mListTopOffset - ( lastView.getBottom() - getHeight() );
-//		}
-//			
-//		final boolean cannotScrollDown = ( mFirstItemPosition == 0 &&
-//				firstView.getTop() >= 0 && scrolledDistance >= 0 );
-//        final boolean cannotScrollUp = ( mLastItemPosition == mAdapter.getCount() - 1 &&
-//        		lastView.getBottom() <= getHeight() && scrolledDistance <= 0);
-//        
-//		// 底部超过最大目标位置坐标，进行回弹
-//		if ( mLastItemPosition == mAdapter.getCount() - 1
-//				&& mListTop < maxDistance ) 
-////        if ( cannotScrollUp )
-//		{
-//			mListTop = maxDistance;
-//		}
-//        
-//		// 顶部超过最小目标位置坐标，进行回弹
-//		if ( scrolledDistance > 0 
-//				&& mListTop > 0 )
-////        if ( cannotScrollDown )
-//		{
-//			mListTop = 0;
-//		}
-		
+		int maxDistance = mListTop;
+		if ( firstView != null && lastView != null )
+		{
+			maxDistance = firstView.getTop() - mListTopOffset - ( lastView.getBottom() - getHeight() );
+		}
+			
 		final boolean cannotScrollDown = ( mFirstItemPosition == 0 &&
 				firstView.getTop() >= 0 && scrolledDistance >= 0 );
         final boolean cannotScrollUp = ( mLastItemPosition == mAdapter.getCount() - 1 &&
         		lastView.getBottom() <= getHeight() && scrolledDistance <= 0);
         
-        if ( cannotScrollDown || cannotScrollUp )
-        {
-        	return;
-        }
+		// 底部超过最大目标位置坐标，进行回弹
+//		if ( mLastItemPosition == mAdapter.getCount() - 1
+//				&& mListTop < maxDistance ) 
+        if ( cannotScrollUp )
+		{
+			mListTop = maxDistance;
+			mFlingEffect.setMinDestPosition( maxDistance );
+		}
+        
+		// 顶部超过最小目标位置坐标，进行回弹
+//		if ( scrolledDistance > 0 
+//				&& mListTop > 0 )
+        if ( cannotScrollDown )
+		{
+			mListTop = 0;
+			mFlingEffect.setMaxDestPosition( 0 );
+		}
 		
 		Log.e(VIEW_LOG_TAG, "mListTop : " + mListTop );
 		// 请求重新绘制
@@ -773,19 +771,11 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		mSelectorRect.setEmpty();
 		
 		// 根据滚动速度进行惯性滚动
-		if ( mScrollEffect != null )
+		if ( mFlingEffect != null )
 		{
-			if ( !( ( mListTop > 0 && mFirstItemPosition == 0 ) 
-					|| ( mLastItemPosition == mAdapter.getCount() - 1
-							&& getChildAt(getChildCount() - 1).getBottom() < getHeight() ) ) )
-			{
-				mScrollEffect.setMaxDestPosition( Float.MAX_VALUE );
-				mScrollEffect.setMinDestPosition( -Float.MAX_VALUE );
-			}
-			
 			curTouchState = TOUCH_STATE_FLING;
-			mScrollEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
-			post( mScrollEffectRunnable );
+			mFlingEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
+			post( mFlingEffectRunnable );
 		}
 		invalidate();
 	}

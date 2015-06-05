@@ -7,7 +7,7 @@ import android.util.Log;
  * @author moon
  *
  */
-public class FrictionScrollEffect extends AbScrollEffect 
+public class FrictionFlingEffect extends AbFlingEffect 
 {
 	/**
 	 * 摩擦系数
@@ -17,7 +17,7 @@ public class FrictionScrollEffect extends AbScrollEffect
 	private float mSnapFactor;
 	
 	
-	public FrictionScrollEffect( float mFrictionFactor, float mSnapFactor ) 
+	public FrictionFlingEffect( float mFrictionFactor, float mSnapFactor ) 
 	{
 		this.mFrictionFactor = mFrictionFactor;
 		this.mSnapFactor = mSnapFactor;

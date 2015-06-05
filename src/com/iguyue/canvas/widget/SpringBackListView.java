@@ -3,8 +3,8 @@ package com.iguyue.canvas.widget;
 import java.util.Stack;
 
 import com.iguyue.canvas.common.Utils;
-import com.iguyue.canvas.effect.AbScrollEffect;
-import com.iguyue.canvas.effect.FrictionScrollEffect;
+import com.iguyue.canvas.effect.AbFlingEffect;
+import com.iguyue.canvas.effect.FrictionFlingEffect;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -115,11 +115,11 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 	/**
 	 * 滚动效果类
 	 */
-	private AbScrollEffect mScrollEffect;
+	private AbFlingEffect mFlingEffect;
 	/**
 	 * 滚动效果可执行类
 	 */
-	private Runnable mScrollEffectRunnable;
+	private Runnable mFlingEffectRunnable;
 	/**
 	 * 滚动速度检测类
 	 */
@@ -178,9 +178,9 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 		VELOCITY_TOLERANCE = ViewConfiguration.get( getContext() ).getScaledMinimumFlingVelocity();
 		
 		// 初始化一个摩擦阻力的滚动效果
-		mScrollEffect = new FrictionScrollEffect( 0.95f, 0.6f );
+		mFlingEffect = new FrictionFlingEffect( 0.95f, 0.6f );
 		// 滚动效果可执行类，执行滚动效果
-		mScrollEffectRunnable = new Runnable() 
+		mFlingEffectRunnable = new Runnable() 
 		{
 			private static final float POSITION_TOLERANCE = 0.5F;
 			
@@ -193,13 +193,13 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 				}
 				
 				// 根据时间更新速度和位置
-				mScrollEffect.update( AnimationUtils.currentAnimationTimeMillis() );
+				mFlingEffect.update( AnimationUtils.currentAnimationTimeMillis() );
 				
 				// 根据偏移量进行滚动
-				scrollList( (int) (mScrollEffect.getPosition() - mListTopStart) );
+				scrollList( (int) (mFlingEffect.getPosition() - mListTopStart) );
 				
 				// 如果没有达到最小速度，则一直滚动
-				if ( !mScrollEffect.isStopScroll( VELOCITY_TOLERANCE, POSITION_TOLERANCE ) )
+				if ( !mFlingEffect.isStopScroll( VELOCITY_TOLERANCE, POSITION_TOLERANCE ) )
 				{
 					// 新的一帧进行调用
 					postDelayed( this, 16 );
@@ -207,7 +207,7 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 				else
 				{
 					curTouchState = TOUCH_STATE_RESET;
-					mScrollEffect.setVelocity( 0 );
+					mFlingEffect.setVelocity( 0 );
 				}
 			}
 		}; 
@@ -495,9 +495,9 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 			positionSelector();
 		}
 		
-		if ( mScrollEffectRunnable != null )
+		if ( mFlingEffectRunnable != null )
 		{
-			removeCallbacks( mScrollEffectRunnable );
+			removeCallbacks( mFlingEffectRunnable );
 		}
 		
 		if ( mVelocityTracker == null )
@@ -581,14 +581,14 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 		}
 			
 		int maxOffset = getHeight() / 2;
-		mScrollEffect.setMaxOffset( maxOffset );
+		mFlingEffect.setMaxOffset( maxOffset );
 		// 底部超过最大目标位置坐标，进行回弹
 		if ( scrolledDistance < 0 
 				&& mLastItemPosition == mAdapter.getCount() - 1
 				&& getChildAt(getChildCount() - 1).getBottom() < getHeight() ) 
 		{
-			mScrollEffect.setMinDestPosition( maxDistance );
-			mScrollEffect.setMaxDestPosition( maxDistance );
+			mFlingEffect.setMinDestPosition( maxDistance );
+			mFlingEffect.setMaxDestPosition( maxDistance );
 			
 			// 限制底部最大滚动距离，只能滚出超过屏幕一般的距离( 滚动距离为负数 )
 			if ( mListTop < maxDistance - maxOffset )
@@ -601,8 +601,8 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 				&& mListTop > 0 
 				&& mFirstItemPosition == 0 )
 		{
-			mScrollEffect.setMinDestPosition( 0 );
-			mScrollEffect.setMaxDestPosition( 0 );
+			mFlingEffect.setMinDestPosition( 0 );
+			mFlingEffect.setMaxDestPosition( 0 );
 			
 			// 限制顶部最大滚动距离，只能滚出超过屏幕一般的距离( 滚动距离为正数 )
 			if ( mListTop > maxOffset )
@@ -722,19 +722,19 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 		mSelectorRect.setEmpty();
 		
 		// 根据滚动速度进行惯性滚动
-		if ( mScrollEffect != null )
+		if ( mFlingEffect != null )
 		{
 			if ( !( ( mListTop > 0 && mFirstItemPosition == 0 ) 
 					|| ( mLastItemPosition == mAdapter.getCount() - 1
 							&& getChildAt(getChildCount() - 1).getBottom() < getHeight() ) ) )
 			{
-				mScrollEffect.setMaxDestPosition( Float.MAX_VALUE );
-				mScrollEffect.setMinDestPosition( -Float.MAX_VALUE );
+				mFlingEffect.setMaxDestPosition( Float.MAX_VALUE );
+				mFlingEffect.setMinDestPosition( -Float.MAX_VALUE );
 			}
 			
 			curTouchState = TOUCH_STATE_FLING;
-			mScrollEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
-			post( mScrollEffectRunnable );
+			mFlingEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
+			post( mFlingEffectRunnable );
 		}
 		invalidate();
 	}

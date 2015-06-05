@@ -1,13 +1,11 @@
 package com.iguyue.canvas.effect;
 
-import android.util.Log;
-
 /**
  * 滚动效果抽象类
  * @author moon
  *
  */
-public abstract class AbScrollEffect 
+public abstract class AbFlingEffect 
 {
 	/**
 	 * 最大时间
@@ -26,9 +24,15 @@ public abstract class AbScrollEffect
 	 */
 	protected long mLastTime;
 	
+	/**
+	 * 最大，最小目的位置
+	 */
 	protected float mMaxDestPosition = Float.MAX_VALUE;
 	protected float mMinDestPosition = -Float.MAX_VALUE;
 	
+	/**
+	 * 最大偏移量
+	 */
 	protected float mMaxOffset;
 	
 	/**
@@ -68,7 +72,7 @@ public abstract class AbScrollEffect
 		final boolean standingStill = Math.abs(mVelocity) < velocityTolerance;
 		final boolean withinMinLimits = mPosition + positionTolerance > mMinDestPosition;
 		final boolean withinMaxLimits = mPosition - positionTolerance < mMaxDestPosition;
-		return standingStill && withinMinLimits && withinMaxLimits;
+		return mVelocity == 0 || ( standingStill && withinMinLimits && withinMaxLimits );
 	}
 	
 	/**
