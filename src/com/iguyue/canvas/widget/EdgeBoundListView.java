@@ -4,6 +4,7 @@ import java.util.Stack;
 
 import com.iguyue.canvas.common.Utils;
 import com.iguyue.canvas.effect.AbFlingEffect;
+import com.iguyue.canvas.effect.EdgeBoundEffect;
 import com.iguyue.canvas.effect.EdgeBoundFlingEffect;
 
 import android.annotation.SuppressLint;
@@ -14,7 +15,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Vibrator;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -156,6 +156,21 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 */
 	private Drawable mSelector;
 	
+	/**
+	 * 顶部边界拉动效果
+	 */
+	private EdgeBoundEffect mTopEdgeBoundEffect;
+	/**
+	 * 底部边界拉动效果
+	 */
+	private EdgeBoundEffect mBottomEdgeBoundEffect;
+	
+	/**
+	 * 上次触摸的y坐标
+	 */
+	private int mTouchLastY;
+	
+	
 	public EdgeBoundListView(Context context) 
 	{
 		super(context);
@@ -196,14 +211,22 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 				if ( getChildCount() > 0 )
 				{
 					mListTopStart = getChildAt( 0 ).getTop() - mListTopOffset;
+					mTouchLastY = mListTopStart;
 				}
 				
-				
+				if ( curTouchState != TOUCH_STATE_SCROLL && curTouchState != TOUCH_STATE_FLING )
+				{
+					return;
+				}
 				// 根据时间更新速度和位置
 				mFlingEffect.update( AnimationUtils.currentAnimationTimeMillis() );
 				
 				// 根据偏移量进行滚动
-				scrollList( (int) (mFlingEffect.getPosition() - mListTopStart) );
+				int position = (int)mFlingEffect.getPosition();
+				// 计算与上一次位置的增量值
+				int delta = position - mTouchLastY;
+				scrollList( position - mListTopStart, delta );
+				mTouchLastY = position;
 				
 				// 如果没有达到最小速度，则一直滚动
 				if ( !mFlingEffect.isStopScroll( mMinFlingVelocity, POSITION_TOLERANCE ) )
@@ -217,6 +240,9 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 				}
 			}
 		}; 
+		
+		mTopEdgeBoundEffect = new EdgeBoundEffect( getContext() );
+		mBottomEdgeBoundEffect = new EdgeBoundEffect( getContext() );
 	}
 
 	@Override
@@ -465,8 +491,8 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		}
 		
 		mListTop += offset;
-		Log.e(VIEW_LOG_TAG, "offsetChildrenTopAndBottom-mListTop : " + mListTop );
-		Log.e(VIEW_LOG_TAG, "offsetChildrenTopAndBottom-childCount : " + childCount );
+//		Log.e(VIEW_LOG_TAG, "offsetChildrenTopAndBottom-mListTop : " + mListTop );
+//		Log.e(VIEW_LOG_TAG, "offsetChildrenTopAndBottom-childCount : " + childCount );
 	}
 	
 	@Override
@@ -534,6 +560,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		mTouchStartX = (int) event.getX();
 		mTouchStartY = (int) event.getY();
 		
+		mTouchLastY = mTouchStartY;
 		// 记录第一个子view的top位置
 		mListTopStart = getChildAt( 0 ).getTop() - mListTopOffset;
 //		Log.e(VIEW_LOG_TAG, "mListTopStart : " + mListTopStart );
@@ -579,11 +606,16 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		
 		if ( curTouchState == TOUCH_STATE_SCROLL )
 		{
+			mSelectorRect.setEmpty();
+			invalidate();
 			mVelocityTracker.addMovement( event );
 			// 计算滑动的距离
-			int scrollDistance = (int)event.getY() - mTouchStartY;
-			scrollList( scrollDistance );
-			mSelectorRect.setEmpty();
+			int y = (int)event.getY();
+			int scrollDistance = y - mTouchStartY;
+			// 计算与上一次位置的增量值
+			int delta = y - mTouchLastY;
+			scrollList( scrollDistance, delta );
+			mTouchLastY = y;
 		}
 	}
 	
@@ -622,8 +654,9 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	/**
 	 * 进行滚动
 	 * @param scrolledDistance
+	 * @param increamentDelta
 	 */
-	private void scrollList( int scrolledDistance )
+	private void scrollList( int scrolledDistance, int increamentDelta )
 	{
 		// 重新计算List top的位置
 		mListTop = mListTopStart + scrolledDistance;
@@ -647,7 +680,18 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 //				&& mListTop < maxDistance ) 
         if ( cannotScrollUp )
 		{
+        	// 进行底部约束发光特效
+        	if ( mBottomEdgeBoundEffect != null )
+        	{
+        		mBottomEdgeBoundEffect.onPull( (float)increamentDelta / getHeight() );
+        		invalidate( mBottomEdgeBoundEffect.getBounds( true ) );
+        	}
+        	if ( mTopEdgeBoundEffect != null && !mTopEdgeBoundEffect.isFinish() )
+        	{
+        		mTopEdgeBoundEffect.onRelease();
+        	}
 			mListTop = maxDistance;
+			mTouchStartY = mTouchLastY;
 			mFlingEffect.setMinDestPosition( maxDistance );
 		}
         
@@ -656,11 +700,22 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 //				&& mListTop > 0 )
         if ( cannotScrollDown )
 		{
+        	// 进行顶部约束发光特效
+        	if ( mTopEdgeBoundEffect != null )
+        	{
+        		mTopEdgeBoundEffect.onPull( (float)increamentDelta / getHeight() );
+        		invalidate( mTopEdgeBoundEffect.getBounds( false ) );
+        	}
+        	if ( mBottomEdgeBoundEffect != null && !mBottomEdgeBoundEffect.isFinish() )
+        	{
+        		mBottomEdgeBoundEffect.onRelease();
+        	}
 			mListTop = 0;
+			mTouchStartY = mTouchLastY;
 			mFlingEffect.setMaxDestPosition( 0 );
 		}
 		
-		Log.e(VIEW_LOG_TAG, "mListTop : " + mListTop );
+//		Log.e(VIEW_LOG_TAG, "mListTop : " + mListTop );
 		// 请求重新绘制
 		requestLayout();
 	}
@@ -767,17 +822,24 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	{
 		mVelocityTracker.recycle();
 		mVelocityTracker = null;
-//		curTouchState = TOUCH_STATE_RESET;
-		mSelectorRect.setEmpty();
 		
-		// 根据滚动速度进行惯性滚动
-		if ( mFlingEffect != null )
+		if ( curTouchState == TOUCH_STATE_CLICK || curTouchState == TOUCH_STATE_RESET )
 		{
-			curTouchState = TOUCH_STATE_FLING;
-			mFlingEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
-			post( mFlingEffectRunnable );
+			curTouchState = TOUCH_STATE_RESET;
+			mSelectorRect.setEmpty();
+			invalidate();
 		}
-		invalidate();
+		else
+		{
+			// 根据滚动速度进行惯性滚动
+			if ( mFlingEffect != null )
+			{
+				curTouchState = TOUCH_STATE_FLING;
+				mFlingEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
+				post( mFlingEffectRunnable );
+			}
+		}
+		
 	}
 	
 	@Override
@@ -790,12 +852,45 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			mSelector.draw( canvas );
 		}
 		super.dispatchDraw(canvas);
+		
+		// 绘制达到顶部拉动效果图
+		if ( mTopEdgeBoundEffect != null && !mTopEdgeBoundEffect.isFinish() )
+		{
+			
+            mTopEdgeBoundEffect.setSize( getWidth(), getHeight() );
+            
+			if( mTopEdgeBoundEffect.draw( canvas ) )
+			{
+				invalidate( mTopEdgeBoundEffect.getBounds( false ) );
+			}
+		}
+		
+		// 绘制达到底部拉动效果图
+		if ( mBottomEdgeBoundEffect != null && !mBottomEdgeBoundEffect.isFinish() )
+		{
+			final int restoreCount = canvas.save();
+			mBottomEdgeBoundEffect.setSize( getWidth(), getHeight() );
+			canvas.translate( 0, getHeight() );
+			canvas.rotate( 180, getWidth() / 2, 0 );
+			if( mBottomEdgeBoundEffect.draw( canvas ) )
+			{
+				invalidate( mBottomEdgeBoundEffect.getBounds( true ) );
+			}
+			canvas.restoreToCount( restoreCount );
+		}
+	}
+	
+	@Override
+	public void draw(Canvas canvas) 
+	{
+		super.draw(canvas);
+		
+		
 	}
 	
 	@Override
 	protected boolean drawChild( Canvas canvas, View child, long drawingTime ) 
 	{
-		
 		return super.drawChild(canvas, child, drawingTime);
 	}
 }
