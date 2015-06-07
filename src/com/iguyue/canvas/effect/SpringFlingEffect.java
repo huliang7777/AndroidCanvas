@@ -5,7 +5,7 @@ package com.iguyue.canvas.effect;
  * @author moon
  *
  */
-public class FrictionFlingEffect extends AbFlingEffect 
+public class SpringFlingEffect extends AbFlingEffect 
 {
 	/**
 	 * 摩擦系数
@@ -15,7 +15,7 @@ public class FrictionFlingEffect extends AbFlingEffect
 	private float mSnapFactor;
 	
 	
-	public FrictionFlingEffect( float mFrictionFactor, float mSnapFactor ) 
+	public SpringFlingEffect( float mFrictionFactor, float mSnapFactor ) 
 	{
 		this.mFrictionFactor = mFrictionFactor;
 		this.mSnapFactor = mSnapFactor;
@@ -27,9 +27,6 @@ public class FrictionFlingEffect extends AbFlingEffect
 	@Override
 	protected void onUpdate(int dt) 
 	{
-		// 计算是否进行反向滚动操作
-		mVelocity += getReverseDistance() * mSnapFactor;
-		
 		mPosition += mVelocity * dt / 1000;
 		
 		// 设置滚动最大，最小偏移位置
@@ -40,6 +37,12 @@ public class FrictionFlingEffect extends AbFlingEffect
 		else if ( mPosition < mMinDestPosition - mMaxOffset )
 		{
 			mPosition = mMinDestPosition - mMaxOffset;
+		}
+		
+		if ( mPosition > mMaxDestPosition || mPosition < mMinDestPosition )
+		{
+			// 计算是否进行反向滚动操作
+			mVelocity = getReverseDistance() * mSnapFactor;
 		}
 		
 		// 逐步减少速度

@@ -8,6 +8,7 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
@@ -256,7 +257,7 @@ public class EdgeBoundEffect
 		mGlowScale = mGlowScaleStart = mGlowScaleFinish = 
 				Math.min( MAX_GLOW_SCALE, mGlowScale + glowDelta * SCALE_FACTOR );
 		
-//		Log.e( "onPull", "mGlowScale-mGlowAlpha-mEdgeScale-mEdgeAlpha: " + mGlowScale + "-" + mGlowAlpha + "-" + mEdgeScale + "-" + mEdgeAlpha );
+		Log.e( "onPull", "mPullDistance-delta: " + mPullDistance + "-" + delta );
 	}
 	
 	/**

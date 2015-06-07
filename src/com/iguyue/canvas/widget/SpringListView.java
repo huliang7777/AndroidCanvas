@@ -4,7 +4,7 @@ import java.util.Stack;
 
 import com.iguyue.canvas.common.Utils;
 import com.iguyue.canvas.effect.AbFlingEffect;
-import com.iguyue.canvas.effect.FrictionFlingEffect;
+import com.iguyue.canvas.effect.SpringFlingEffect;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -23,12 +23,12 @@ import android.widget.AdapterView;
 import android.widget.ListAdapter;
 
 /**
- * 回弹自定义ListView
+ * 边界来回弹动自定义ListView
  * @author moon
  *
  */
 @SuppressLint("ClickableViewAccessibility")
-public class SpringBackListView extends AdapterView<ListAdapter> 
+public class SpringListView extends AdapterView<ListAdapter> 
 {
 	/**
 	 * 第一次触摸的x坐标
@@ -151,13 +151,13 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 	 */
 	private Drawable mSelector;
 	
-	public SpringBackListView(Context context) 
+	public SpringListView(Context context) 
 	{
 		super(context);
 		init();
 	}
 	
-	public SpringBackListView(Context context, AttributeSet attrs) 
+	public SpringListView(Context context, AttributeSet attrs) 
 	{
 		super(context, attrs);
 		init();
@@ -178,7 +178,7 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 		VELOCITY_TOLERANCE = ViewConfiguration.get( getContext() ).getScaledMinimumFlingVelocity();
 		
 		// 初始化一个摩擦阻力的滚动效果
-		mFlingEffect = new FrictionFlingEffect( 0.95f, 0.6f );
+		mFlingEffect = new SpringFlingEffect( 0.95f, 5.96f );
 		// 滚动效果可执行类，执行滚动效果
 		mFlingEffectRunnable = new Runnable() 
 		{
@@ -523,7 +523,7 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 			mVelocityTracker.addMovement( event );
 			// 计算滑动的距离
 			int scrollDistance = (int)event.getY() - mTouchStartY;
-			scrollList( scrollDistance );
+			scrollList( scrollDistance / 3 );
 			mSelectorRect.setEmpty();
 		}
 	}
@@ -580,37 +580,37 @@ public class SpringBackListView extends AdapterView<ListAdapter>
 			maxDistance = firstView.getTop() - mListTopOffset - ( lastView.getBottom() - getHeight() );
 		}
 			
-		int maxOffset = getHeight() / 2;
-		mFlingEffect.setMaxOffset( maxOffset );
+//		int maxOffset = getHeight() / 3;
+//		mFlingEffect.setMaxOffset( maxOffset );
 		// 底部超过最大目标位置坐标，进行回弹
 		if ( scrolledDistance < 0 
 				&& mLastItemPosition == mAdapter.getCount() - 1
 				&& getChildAt(getChildCount() - 1).getBottom() < getHeight() ) 
 		{
 			mFlingEffect.setMinDestPosition( maxDistance );
-			mFlingEffect.setMaxDestPosition( maxDistance );
+			mFlingEffect.setMaxOffset( maxDistance - mListTop );
 			
 			// 限制底部最大滚动距离，只能滚出超过屏幕一般的距离( 滚动距离为负数 )
-			if ( mListTop < maxDistance - maxOffset )
-			{
-				mListTop = maxDistance - maxOffset;
-			}
+//			if ( mListTop < maxDistance - maxOffset )
+//			{
+//				mListTop = maxDistance - maxOffset;
+//			}
 		}
 		// 顶部超过最小目标位置坐标，进行回弹
 		if ( scrolledDistance > 0 
 				&& mListTop > 0 
 				&& mFirstItemPosition == 0 )
 		{
-			mFlingEffect.setMinDestPosition( 0 );
 			mFlingEffect.setMaxDestPosition( 0 );
+			mFlingEffect.setMaxOffset( mListTop );
 			
 			// 限制顶部最大滚动距离，只能滚出超过屏幕一般的距离( 滚动距离为正数 )
-			if ( mListTop > maxOffset )
-			{
-				mListTop = maxOffset;
-			}
+//			if ( mListTop > maxOffset )
+//			{
+//				mListTop = maxOffset;
+//			}
+			
 		}
-		
 		
 		// 请求重新绘制
 		requestLayout();

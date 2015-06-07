@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import com.iguyue.canvas.widget.EdgeBoundListView;
 import com.iguyue.canvas.widget.SpringBackListView;
+import com.iguyue.canvas.widget.SpringListView;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -23,12 +24,13 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		setContentView(R.layout.activity_edgebound_list_view);
+		setContentView(R.layout.activity_spring_list_view);
 		
 //		TextRollCycleView view = (TextRollCycleView) findViewById( R.id.text_roll );
 		
+		SpringListView listView = (SpringListView) findViewById( R.id.list_view );
 //		SpringBackListView listView = (SpringBackListView) findViewById( R.id.list_view );
-		EdgeBoundListView listView = (EdgeBoundListView) findViewById( R.id.list_view );
+//		EdgeBoundListView listView = (EdgeBoundListView) findViewById( R.id.list_view );
 		
 		final ArrayList<String> datas = new ArrayList<String>();
 		datas.add( "我是中国大亨 " );
