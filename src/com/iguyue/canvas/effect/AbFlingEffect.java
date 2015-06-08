@@ -134,8 +134,6 @@ public abstract class AbFlingEffect
 		{
 			reverseDistance = mMinDestPosition - mPosition;
 		}
-//		Log.e( "mVelocity", "mMinDestPosition-mMaxDestPosition-reverseDistance : "
-//				+ mMinDestPosition + "-" + mMaxDestPosition + "-" + reverseDistance );
 		return reverseDistance;
 	}
 	

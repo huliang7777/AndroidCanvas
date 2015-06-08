@@ -34,51 +34,51 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	/**
 	 * 第一次触摸的x坐标
 	 */
-	private int mTouchStartX;
+	protected int mTouchStartX;
 	/**
 	 * 第一次触摸的y坐标
 	 */
-	private int mTouchStartY;
+	protected int mTouchStartY;
 	
 	/**
 	 * 滚动临界值
 	 */
-	private int mTouchSlop;
+	protected int mTouchSlop;
 	
 	/**
 	 * 第一次触摸时List顶部初始坐标
 	 */
-	private int mListTopStart;
+	protected int mListTopStart;
 	
 	/**
 	 * 第一个可见item到List顶部坐标
 	 */
-	private int mListTop;
+	protected int mListTop;
 	
 	/**
 	 * 第一个可见item位置
 	 */
-	private int mFirstItemPosition;
+	protected int mFirstItemPosition;
 	
 	/**
 	 * 最后一个可见item位置
 	 */
-	private int mLastItemPosition;
+	protected int mLastItemPosition;
 	
 	/**
 	 * List顶部滚动的偏移量
 	 */
-	private int mListTopOffset;
+	protected int mListTopOffset;
 	
 	/**
 	 * 缓存views
 	 */
-	private Stack<View> mCachedViews = new Stack<View>();
+	protected Stack<View> mCachedViews = new Stack<View>();
 	
 	/**
 	 * 内容适配器
 	 */
-	private ListAdapter mAdapter;
+	protected ListAdapter mAdapter;
 	
 	/**
 	 * 触摸状态：0-重置状态
@@ -100,7 +100,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	/**
 	 * 当前触摸状态
 	 */
-	private int curTouchState;
+	protected int curTouchState;
 	
 	/**
 	 * 长按检测Runnable
@@ -414,7 +414,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 * 添加并测量child
 	 * @param child
 	 */
-	private void addAndMeasureChild( View child, int index )
+	protected void addAndMeasureChild( View child, int index )
 	{
 		LayoutParams params = child.getLayoutParams();
 		if ( params == null )
@@ -423,13 +423,13 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		}
 		addViewInLayout( child, index, params );
 		int width = getWidth();
-		child.measure( MeasureSpec.EXACTLY | width, MeasureSpec.UNSPECIFIED );
+		child.measure( MeasureSpec.EXACTLY | width / 2, MeasureSpec.UNSPECIFIED );
 	}
 	
 	/**
 	 * 布局child
 	 */
-	private void layoutChildren()
+	protected void layoutChildren()
 	{
 		int top = mListTop + mListTopOffset;
 //		Log.e(VIEW_LOG_TAG, "top : " + top );

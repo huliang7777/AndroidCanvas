@@ -29,26 +29,15 @@ public class SpringFlingEffect extends AbFlingEffect
 	{
 		mPosition += mVelocity * dt / 1000;
 		
-		// 设置滚动最大，最小偏移位置
-		if ( mPosition > mMaxDestPosition + mMaxOffset )
-		{
-			mPosition = mMaxDestPosition + mMaxOffset;
-		}
-		else if ( mPosition < mMinDestPosition - mMaxOffset )
-		{
-			mPosition = mMinDestPosition - mMaxOffset;
-		}
-		
+		// 达到最大，最小偏移后进行反向滚动
 		if ( mPosition > mMaxDestPosition || mPosition < mMinDestPosition )
 		{
-			// 计算是否进行反向滚动操作
+			// 计算反向滚动速度
 			mVelocity = getReverseDistance() * mSnapFactor;
 		}
 		
 		// 逐步减少速度
 		mVelocity *= mFrictionFactor;
-		
-//		Log.e( "mVelocity", "mVelocity : " + mVelocity );
 	}
 
 }

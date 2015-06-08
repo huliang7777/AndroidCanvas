@@ -178,7 +178,7 @@ public class SpringListView extends AdapterView<ListAdapter>
 		VELOCITY_TOLERANCE = ViewConfiguration.get( getContext() ).getScaledMinimumFlingVelocity();
 		
 		// 初始化一个摩擦阻力的滚动效果
-		mFlingEffect = new SpringFlingEffect( 0.95f, 5.96f );
+		mFlingEffect = new SpringFlingEffect( 0.95f, 10.96f );
 		// 滚动效果可执行类，执行滚动效果
 		mFlingEffectRunnable = new Runnable() 
 		{
