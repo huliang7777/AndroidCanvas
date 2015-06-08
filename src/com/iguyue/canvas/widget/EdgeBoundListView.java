@@ -310,7 +310,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 * 从offset开始向下布局
 	 * @param offset
 	 */
-	private void fillListDown( int offset )
+	protected void fillListDown( int offset )
 	{
 		int lastItemBottom = 0;
 		int count = mAdapter.getCount();
@@ -335,7 +335,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 * 从offset开始向上布局
 	 * @param offset
 	 */
-	private void fillListUp( int offset )
+	protected void fillListUp( int offset )
 	{
 		if ( getChildCount() == 0)
 		{
@@ -369,7 +369,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 * 删除不可见views
 	 * @param offset
 	 */
-	private void removeNonVisibleViews( int offset ) 
+	protected void removeNonVisibleViews( int offset ) 
 	{
 		if ( getChildCount() == 0 )
 		{
@@ -400,7 +400,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 * 获取缓存view
 	 * @return
 	 */
-	private View getCachedView()
+	protected View getCachedView()
 	{
 		View view = null;
 		if ( !mCachedViews.isEmpty() )
@@ -423,7 +423,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		}
 		addViewInLayout( child, index, params );
 		int width = getWidth();
-		child.measure( MeasureSpec.EXACTLY | width / 2, MeasureSpec.UNSPECIFIED );
+		child.measure( MeasureSpec.EXACTLY | width, MeasureSpec.UNSPECIFIED );
 	}
 	
 	/**
