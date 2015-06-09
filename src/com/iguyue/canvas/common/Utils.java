@@ -15,7 +15,6 @@ public class Utils {
 	 */
 	public static float dp2px(Context context, float dp) {
 		DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-		Log.d( "TextRollCycleView", "" + metrics.heightPixels);
 		return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
 				metrics);
 	}

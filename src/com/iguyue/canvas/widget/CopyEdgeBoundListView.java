@@ -15,7 +15,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Vibrator;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -30,7 +29,7 @@ import android.widget.ListAdapter;
  *
  */
 @SuppressLint("ClickableViewAccessibility")
-public class EdgeBoundListView extends AdapterView<ListAdapter> 
+public class CopyEdgeBoundListView extends AdapterView<ListAdapter> 
 {
 	/**
 	 * 第一次触摸的x坐标
@@ -47,14 +46,14 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	protected int mTouchSlop;
 	
 	/**
-	 * List顶部坐标
+	 * 第一次触摸时List顶部初始坐标
 	 */
-	protected int mListTop;
+	protected int mListTopStart;
 	
 	/**
-	 * 上次触摸的y坐标
+	 * 第一个可见item到List顶部坐标
 	 */
-	private int mTouchLastY;
+	protected int mListTop;
 	
 	/**
 	 * 第一个可见item位置
@@ -65,6 +64,11 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 * 最后一个可见item位置
 	 */
 	protected int mLastItemPosition;
+	
+	/**
+	 * List顶部滚动的偏移量
+	 */
+	protected int mListTopOffset;
 	
 	/**
 	 * 缓存views
@@ -161,14 +165,19 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 */
 	private EdgeBoundEffect mBottomEdgeBoundEffect;
 	
-
-	public EdgeBoundListView(Context context) 
+	/**
+	 * 上次触摸的y坐标
+	 */
+	private int mTouchLastY;
+	
+	
+	public CopyEdgeBoundListView(Context context) 
 	{
 		super(context);
 		init();
 	}
 	
-	public EdgeBoundListView(Context context, AttributeSet attrs) 
+	public CopyEdgeBoundListView(Context context, AttributeSet attrs) 
 	{
 		super(context, attrs);
 		init();
@@ -199,10 +208,11 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			@Override
 			public void run() 
 			{
-//				if ( getChildCount() > 0 )
-//				{
-//					mTouchLastY = getChildAt( 0 ).getTop();
-//				}
+				if ( getChildCount() > 0 )
+				{
+					mListTopStart = getChildAt( 0 ).getTop() - mListTopOffset;
+					mTouchLastY = mListTopStart;
+				}
 				
 				if ( curTouchState != TOUCH_STATE_SCROLL && curTouchState != TOUCH_STATE_FLING )
 				{
@@ -215,7 +225,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 				int position = (int)mFlingEffect.getPosition();
 				// 计算与上一次位置的增量值
 				int delta = position - mTouchLastY;
-				scrollList( delta );
+				scrollList( position - mListTopStart, delta );
 				mTouchLastY = position;
 				
 				// 如果没有达到最小速度，则一直滚动
@@ -284,8 +294,9 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		}
 		else
 		{
-			int offset = mListTop - getChildAt( 0 ).getTop();
-			Log.e(VIEW_LOG_TAG, "mListTop-offset-getChildAt( 0 ).getTop() : " + mListTop + "-" + offset + "-" + getChildAt( 0 ).getTop() );
+			int offset = mListTop + mListTopOffset - getChildAt( 0 ).getTop();
+//			Log.e(VIEW_LOG_TAG, "getChildAt( 0 ).getTop() : " + getChildAt( 0 ).getTop() );
+//			Log.e(VIEW_LOG_TAG, "offset : " + offset );
 			// 删除不可见的view
 			removeNonVisibleViews( offset );
 			fillList( offset );
@@ -339,7 +350,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			addAndMeasureChild( view, 0 );
 			int viewHeight = (int) (view.getMeasuredHeight() + ( mFirstItemPosition - 1 != 0 ? Utils.dp2px( getContext(), 1 ) : 0 ));
 			firstItemTop -= viewHeight;
-			mListTop -= viewHeight;
+			mListTopOffset -= viewHeight;
 			--mFirstItemPosition;
 		}
 	}
@@ -372,7 +383,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		{
 			removeViewInLayout( firstView );
 			mCachedViews.add( firstView );
-			mListTop += firstView.getMeasuredHeight() + ( mFirstItemPosition != 0 ? Utils.dp2px( getContext(), 1 ) : 0 );
+			mListTopOffset += firstView.getMeasuredHeight() + ( mFirstItemPosition != 0 ? Utils.dp2px( getContext(), 1 ) : 0 );
 			++mFirstItemPosition;
 			firstView = getChildAt( 0 );
 		}
@@ -420,7 +431,7 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	 */
 	protected void layoutChildren()
 	{
-		int top = mListTop;
+		int top = mListTop + mListTopOffset;
 //		Log.e(VIEW_LOG_TAG, "top : " + top );
 		int width = getWidth();
 		int childCount = getChildCount();
@@ -550,6 +561,9 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 		mTouchStartY = (int) event.getY();
 		
 		mTouchLastY = mTouchStartY;
+		// 记录第一个子view的top位置
+		mListTopStart = getChildAt( 0 ).getTop() - mListTopOffset;
+//		Log.e(VIEW_LOG_TAG, "mListTopStart : " + mListTopStart );
 		
 		if ( curTouchState == TOUCH_STATE_FLING )
 		{
@@ -597,9 +611,10 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			mVelocityTracker.addMovement( event );
 			// 计算滑动的距离
 			int y = (int)event.getY();
+			int scrollDistance = y - mTouchStartY;
 			// 计算与上一次位置的增量值
 			int delta = y - mTouchLastY;
-			scrollList( delta );
+			scrollList( scrollDistance, delta );
 			mTouchLastY = y;
 		}
 	}
@@ -638,25 +653,27 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 	
 	/**
 	 * 进行滚动
+	 * @param scrolledDistance
 	 * @param increamentDelta
 	 */
-	private void scrollList( int increamentDelta )
+	private void scrollList( int scrolledDistance, int increamentDelta )
 	{
 		// 重新计算List top的位置
-		mListTop += increamentDelta;
+		mListTop = mListTopStart + scrolledDistance;
+//		Log.e(VIEW_LOG_TAG, "mListTopOffset : " + mListTopOffset );
 
 		View firstView = getChildAt( 0 );
 		View lastView = getChildAt( getChildCount() - 1 );
 		int maxDistance = mListTop;
 		if ( firstView != null && lastView != null )
 		{
-			maxDistance = firstView.getTop()  - ( lastView.getBottom() - getHeight() );
+			maxDistance = firstView.getTop() - mListTopOffset - ( lastView.getBottom() - getHeight() );
 		}
 			
 		final boolean cannotScrollDown = ( mFirstItemPosition == 0 &&
-				firstView.getTop() >= 0 && increamentDelta >= 0 );
+				firstView.getTop() >= 0 && scrolledDistance >= 0 );
         final boolean cannotScrollUp = ( mLastItemPosition == mAdapter.getCount() - 1 &&
-        		lastView.getBottom() <= getHeight() && increamentDelta <= 0);
+        		lastView.getBottom() <= getHeight() && scrolledDistance <= 0);
         
 		// 底部超过最大目标位置坐标，进行回弹
 //		if ( mLastItemPosition == mAdapter.getCount() - 1
@@ -817,7 +834,6 @@ public class EdgeBoundListView extends AdapterView<ListAdapter>
 			// 根据滚动速度进行惯性滚动
 			if ( mFlingEffect != null )
 			{
-				mTouchLastY = mListTop;
 				curTouchState = TOUCH_STATE_FLING;
 				mFlingEffect.setState( mListTop, velocity, AnimationUtils.currentAnimationTimeMillis() );
 				post( mFlingEffectRunnable );

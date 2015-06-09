@@ -60,7 +60,7 @@ public class MultiListView extends EdgeBoundListView
 		{
 			View view = mAdapter.getView( mLastItemPosition + 1, getCachedView(), this );
 			addAndMeasureChild( view, -1 );
-			mColumnBottom[ column ] += view.getMeasuredHeight() + ( mLastItemPosition > 0 ? Utils.dp2px( getContext(), 1 ) : 0 );
+			mColumnBottom[ column ] += view.getMeasuredHeight() + ( mLastItemPosition + mColumn > 3 ? Utils.dp2px( getContext(), 1 ) : 0 );
 			++mLastItemPosition;
 			column = getMinColumnBottom();
 			minLastItemBottom = mColumnBottom[ column ];
@@ -79,7 +79,7 @@ public class MultiListView extends EdgeBoundListView
 			return;
 		}
 		
-		int minFirstItemTop = getMinColumnTop();
+		int minFirstItemTop = getMaxColumnTop();
 		
 		while( minFirstItemTop + offset > 0 
 			&& mFirstItemPosition > 0 )
@@ -87,9 +87,9 @@ public class MultiListView extends EdgeBoundListView
 			View view = mAdapter.getView( mFirstItemPosition - 1, getCachedView(),  this );
 			addAndMeasureChild( view, 0 );
 			int viewHeight = (int) (view.getMeasuredHeight() + ( mFirstItemPosition > 0 ? Utils.dp2px( getContext(), 1 ) : 0 ));
-			minFirstItemTop = getMinColumnTop();
-			mListTopOffset -= viewHeight;
+			mListTop -= viewHeight;
 			--mFirstItemPosition;
+			minFirstItemTop = getMaxColumnTop();
 		}
 	}
 	
@@ -109,11 +109,43 @@ public class MultiListView extends EdgeBoundListView
 		int width = getWidth();
 		child.measure( MeasureSpec.EXACTLY | width / mColumn, MeasureSpec.UNSPECIFIED );
 	}
+	
+	/**
+	 * 删除不可见views
+	 * @param offset
+	 */
+	@Override
+	protected void removeNonVisibleViews( int offset ) 
+	{
+		if ( getChildCount() == 0 )
+		{
+			return;
+		}
+		
+		View firstView = getChildAt( 0 );
+		View lastView = getChildAt( getChildCount() - 1 );
+
+		if ( firstView != null && offset < 0 && firstView.getBottom() + offset < 0 )
+		{
+			removeViewInLayout( firstView );
+			mCachedViews.add( firstView );
+			mListTop += firstView.getMeasuredHeight() + ( mFirstItemPosition != 0 ? Utils.dp2px( getContext(), 1 ) : 0 );
+			++mFirstItemPosition;
+			firstView = getChildAt( 0 );
+		}
+		if ( lastView != null && offset > 0 && lastView.getTop() + offset > getHeight() )
+		{
+			removeViewInLayout( lastView );
+			mCachedViews.add( lastView );
+			--mLastItemPosition;
+			lastView = getChildAt( getChildCount() - 1 );
+		}
+	}
 
 	@Override
 	protected void layoutChildren() 
 	{
-		int top = mListTop + mListTopOffset;
+		int top = mListTop;
 //		Log.e(VIEW_LOG_TAG, "top : " + top );
 		int width = getWidth();
 		int childCount = getChildCount();
@@ -143,47 +175,50 @@ public class MultiListView extends EdgeBoundListView
 	}
 	
 	/**
+	 * 获得最大列top
+	 * @return
+	 */
+	private int getMaxColumnTop()
+	{
+		int maxItemTop = 0;
+		
+		int count = getChildCount();
+		if ( count != 0 )
+		{
+			for ( int i=1;i<=mColumn;i++ )
+			{
+				View view = getChildAt( count - i );
+				if ( view != null )
+				{	
+					int top = view.getTop();
+					if ( maxItemTop < top )
+					{
+						maxItemTop = top;
+					}
+				}
+			}
+		}
+		
+		return maxItemTop;
+	}
+	
+	/**
 	 * 获得最小列bottom
 	 * @return
 	 */
 	private int getMinColumnBottom()
 	{
 		int column = 0;
-		int minLastItemBottom = mColumnBottom[ 0 ];
-		
+		int minLastItemBottom = mColumnBottom[ column ];
 		for ( int i=1;i<mColumn;i++ )
 		{
 			if ( minLastItemBottom > mColumnBottom[ i ] )
-			{
-				minLastItemBottom = mColumnBottom[ i ];
+			{	
 				column = i;
+				minLastItemBottom = mColumnBottom[i];
 			}
 		}
 		
 		return column;
-	}
-	
-	/**
-	 * 获得最小列top
-	 * @return
-	 */
-	private int getMinColumnTop()
-	{
-		int minFirstItemTop = getChildAt( 0 ).getTop();
-		
-		for ( int i=1;i<mColumn;i++ )
-		{
-			View view = getChildAt( i );
-			if ( view != null )
-			{	
-				int top = view.getTop();
-				if ( minFirstItemTop > top )
-				{
-					minFirstItemTop = top;
-				}
-			}
-		}
-		
-		return minFirstItemTop;
 	}
 }
