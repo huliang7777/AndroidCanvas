@@ -8,5 +8,6 @@
     	<attr name="show_num" format="integer" />
     	<attr name="per_height" format="dimension" />
     	<attr name="text_size" format="dimension" />
+    	<attr name="custom_src" format="reference"/>
     </declare-styleable>
 </resources>
